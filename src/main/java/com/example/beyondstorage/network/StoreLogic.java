@@ -6,55 +6,77 @@ import com.wintercogs.beyonddimensions.Api.DataBase.Storage.UnifiedStorage;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public class StoreLogic {
 
     public static void transferItemsToNetwork(ServerPlayer player, AbstractContainerMenu container) {
-        // 1. 获取玩家对应的维度网络
-        DimensionsNet net = DimensionsNet.getNetFromPlayer(player);
+        // 1. 安全检查：如果打开的是玩家自己的背包，直接禁止操作
+        if (container instanceof InventoryMenu) {
+            return; 
+        }
 
+        // 2. 获取存储网络
+        DimensionsNet net = DimensionsNet.getNetFromPlayer(player);
         if (net == null) {
-            player.sendSystemMessage(Component.literal("§c[Beyond Storage] 未找到您的维度网络，请先创建一个！"));
+            player.sendSystemMessage(Component.literal("§c未找到维度网络，请先创建！"), true); // true = 显示在ActionBar
             return;
         }
 
         UnifiedStorage storage = net.getUnifiedStorage();
-        if (storage == null) {
-            player.sendSystemMessage(Component.literal("§c[Beyond Storage] 存储网络异常。"));
-            return;
-        }
+        if (storage == null) return;
 
-        // 2. 确定容器中的物品槽位 (排除玩家背包)
-        // 玩家背包通常占据最后 36 个槽位 (27 存储 + 9 快捷栏)
-        int containerSlotsCount = container.slots.size() - 36;
-        if (containerSlotsCount <= 0) return;
+        int movedCount = 0;
+        boolean networkFull = false;
 
-        boolean movedAny = false;
+        // 3. 智能遍历：只处理“非玩家背包”的槽位
+        for (Slot slot : container.slots) {
+            // 关键判断：如果这个槽位关联的库存是玩家自己的背包，或者是玩家的装备栏/副手，一律跳过
+            if (slot.container == player.getInventory()) {
+                continue;
+            }
 
-        for (int i = 0; i < containerSlotsCount; i++) {
-            Slot slot = container.getSlot(i);
-            if (slot.hasItem()) {
+            if (slot.hasItem() && slot.mayPickup(player)) {
                 ItemStack stack = slot.getItem();
-                
-                // 将物品包装为模组定义的 ItemStackType
                 ItemStackType itemStackType = new ItemStackType(stack);
                 
-                // 执行插入
-                ItemStackType remaining = (ItemStackType) storage.insert(itemStackType, false);
+                // 尝试插入
+                ItemStackType remaining = (UnifiedStorage.BeforeInsertHandlerReturnInfo.getEmpty().getStack() == null) ? 
+                        (ItemStackType) storage.insert(itemStackType, false) :
+                        (ItemStackType) storage.insert(itemStackType, false); // 简化调用，忽略旧版API差异
+
+                // 计算实际存入了多少
+                long originalCount = stack.getCount();
+                long remainingCount = remaining.getStackAmount();
                 
-                // 更新槽位中的物品
-                slot.set(remaining.getStack());
-                movedAny = true;
+                if (remainingCount < originalCount) {
+                    movedCount++;
+                    // 更新槽位：如果剩下了就放回去，没剩下就设为空
+                    if (remainingCount > 0) {
+                        ItemStack newStack = stack.copy();
+                        newStack.setCount((int) remainingCount);
+                        slot.set(newStack);
+                        networkFull = true; // 有剩余说明网络可能满/限额
+                    } else {
+                        slot.set(ItemStack.EMPTY);
+                    }
+                }
             }
         }
 
-        if (movedAny) {
+        // 4. 结果反馈 (优化为 ActionBar 提示)
+        if (movedCount > 0) {
             container.broadcastChanges();
-            player.sendSystemMessage(Component.literal("§a[Beyond Storage] 已将物品存入维度网络！"));
+            player.sendSystemMessage(Component.literal("§a⬇ 已存入 " + movedCount + " 组物品"), true);
         } else {
-            player.sendSystemMessage(Component.literal("§e[Beyond Storage] 箱子是空的，或者网络已满。"));
+            if (networkFull) {
+                player.sendSystemMessage(Component.literal("§e网络已满"), true);
+            } else {
+                // 如果没有物品移动，保持静默，或者提示空
+                player.sendSystemMessage(Component.literal("§7没有可存入的物品"), true);
+            }
         }
     }
 }
