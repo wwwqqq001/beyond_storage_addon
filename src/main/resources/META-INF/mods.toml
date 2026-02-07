@@ -1,0 +1,19 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All rights reserved"
+issueTrackerURL="https://github.com/"
+showAsResourcePack=false
+
+[[mods]]
+modId="beyondstorage"
+version="1.0.0"
+displayName="Beyond Storage Integration"
+updateJSONURL="https://github.com/"
+displayURL="https://github.com/"
+logoFile="logo.png"
+credits="Created by Gemini"
+authors="User"
+description='''
+Adds a button and keybind to transfer all items from a chest to the Beyond Dimensions storage network.
+'''
+dependencies.beyondstorage=[]
