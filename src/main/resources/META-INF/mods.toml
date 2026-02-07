@@ -10,7 +10,6 @@ version="1.0.0"
 displayName="Beyond Storage Integration"
 updateJSONURL="https://github.com/"
 displayURL="https://github.com/"
-logoFile="logo.png"
 credits="Created by Gemini"
 authors="User"
 description='''
