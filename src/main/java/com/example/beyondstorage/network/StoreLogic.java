@@ -1,8 +1,8 @@
 package com.example.beyondstorage.network;
 
 import com.wintercogs.beyonddimensions.Api.DataBase.DimensionsNet;
-import com.wintercogs.beyonddimensions.Api.DataBase.Stack.IStackType;
-import com.wintercogs.beyonddimensions.Api.DataBase.Stack.ItemStackType;
+import com.wintercogs.beyonddimensions.Api.DataBase.Stack.ItemStackKey;
+import com.wintercogs.beyonddimensions.Api.DataBase.Stack.KeyAmount;
 import com.wintercogs.beyonddimensions.Api.DataBase.Storage.UnifiedStorage;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -37,14 +37,14 @@ public class StoreLogic {
 
             if (slot.hasItem() && slot.mayPickup(player)) {
                 ItemStack stack = slot.getItem();
-                ItemStackType itemStackType = new ItemStackType(stack);
+                ItemStackKey itemStackKey = new ItemStackKey(stack);
                 
                 // 修复编译错误：直接调用 insert
-                IStackType<?> result = storage.insert(itemStackType, false);
+                KeyAmount result = storage.insert(itemStackKey, stack.getCount(), false);
                 
-                if (result instanceof ItemStackType remaining) {
+                if (result.key() instanceof ItemStackKey) {
                     long originalCount = stack.getCount();
-                    long remainingCount = remaining.getStackAmount();
+                    long remainingCount = result.amount();
                     
                     if (remainingCount < originalCount) {
                         movedCount++;
