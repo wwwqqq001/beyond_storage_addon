@@ -1,9 +1,9 @@
 package com.example.beyondstorage.network;
 
-import com.wintercogs.beyonddimensions.Api.DataBase.DimensionsNet;
-import com.wintercogs.beyonddimensions.Api.DataBase.Stack.ItemStackKey;
-import com.wintercogs.beyonddimensions.Api.DataBase.Stack.KeyAmount;
-import com.wintercogs.beyonddimensions.Api.DataBase.Storage.UnifiedStorage;
+import com.wintercogs.beyonddimensions.api.dimensionnet.DimensionsNet;
+import com.wintercogs.beyonddimensions.api.storage.key.impl.ItemStackKey;
+import com.wintercogs.beyonddimensions.api.storage.key.KeyAmount;
+import com.wintercogs.beyonddimensions.api.dimensionnet.UnifiedStorage;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
